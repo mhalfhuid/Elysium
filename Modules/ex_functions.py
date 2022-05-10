@@ -9,7 +9,6 @@ from decimal import Decimal
 import math
 import time
 from datetime import datetime, timedelta 
-import data
 import numpy as np
 import pandas as pd
 import configdb as db
@@ -597,7 +596,7 @@ def LastOrderStatus(coin, base, limit):
 		return (orderId, coin, base, side, time, state, price, quantity)
 
 
-
+print(LastOrderStatus('ETH', 'USDC', 1))
 
 
 def SimpleBuy(coin, base, quantity):
@@ -877,27 +876,7 @@ def GetLiveOrders(coin, base, orderNum):
 
 
 		
-# CreateSellOrder creates sell order at buy order price plus takeProfit, only when the buy order is filled 
-# and when currentPrice is below sell order price
-def RenewOrder(coin, base, takeProfit, orderId, price, status):
-	symbol = coin + base
 
-	# for order in orderList:
-	# 	orderId = int(order[2])
-	# 	buyPrice = float(order[4])
-	# 	quantity = float(order[5])
-	# 	status = order[6]
-	# 	side = order[7]
-	currentPrice = PriceAction2(symbol)[3]
-	sellPrice = price + (price * (takeProfit/100))
-
-	if side == 'BUY' and status == 'FILLED' and currentPrice < sellPrice:
-		print('buy order %f is filled, creating sell order at %f' %(orderId, sellPrice))
-
-	# 		# SimpleLimitSell(symbol, quantity, sellPrice)
-	# 		# db.SQLDeleteOrder(orderId) # delete old filled buy order from db
-	# 	else:
-	# 		print('buy order %f not filled' %orderId)
 
 
 

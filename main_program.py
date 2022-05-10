@@ -57,7 +57,7 @@ import configdb as db
 
 
 # intitialise global variables
-programName = 'Elysium GridTrader II'
+programName = 'Elysium GridTrader'
 programVersion = '1.1 Beta'
 programDuration = 24 #in hours
 ReAdjustInterval = 3 #in hours
@@ -68,7 +68,7 @@ url = 'https://api.binance.com' #binance server
 timeout = 5
 
 
-trade_interval = 60 #in seconds
+trade_interval = 25 #in seconds
 coin = 'ETH'
 base = 'USDC'
 init = True
@@ -132,48 +132,47 @@ while datetime.now() < program_end:
 		request = requests.get(url, timeout=timeout) #check internet connection
 
 		# update live order status
+		orderNum = len(db.SQLSelectOrder())
 		liveOrderList = ef.GetLiveOrders(coin, base, orderNum)
+		print('live orders')
+		print(liveOrderList)
+		
 		orderList = db.SQLSelectOrder()
+		print('db orders')
+		print(orderList)
+
 		for order in orderList:
+			symbol = order[1]
 			orderId = int(order[2])
-			side = order[6]
-			price = order[3]
-			print('order %f' %orderId)
-			print(liveOrderList)
+			price = float(order[4])
+			quantity = float(order[5])
+			side = order[7]
+
+			status = order[6]
 			for liveOrder in liveOrderList:
-				if orderId == liveOrder[0]:
-					liveStatus = liveOrder[5]
-					print('order %f has live status %s' %(orderId, liveStatus))
-			# 		print(order)
+				liveStatus = liveOrder[5]
+				if orderId == liveOrder[0] and status != liveStatus:
+					print('update dborder %f from status %s to live status %s' %(orderId, status, liveStatus))					
+
+					db.SQLUpdateOrderStatus(liveStatus, orderId)
+
+					if side == 'BUY' and liveStatus == 'CANCELED': #if buy order is filled and current price is above buy price create new buy order
+						currentPrice = ef.PriceAction2(symbol)[3]
+						if currentPrice > price:
+							renewOrder = ef.SimpleLimitBuy(symbol, quantity, price)
+							db.SQLDeleteOrder(orderId)
+							time.sleep(10)
+
+							newOrder = ef.LastOrderStatus(coin, base, 1)
+							newOrderId = newOrder[0]
+							newTransactTime = str(hp.EpochmsToDatetime(order[4]))
+							# newPrice = int(newOrder[6])
+							newPrice = newOrder[6]
+							print(newPrice)
+							print(type(newPrice))
+							
+							db.SQLInsertOrder(symbol, newOrderId, newTransactTime, newPrice, quantity, 'NEW', 'BUY')
 					
-
-			# 		# db.SQLUpdateOrderStatus(liveStatus, orderId)
-			# 		ef.RenewOrder(coin, base, takeProfit, orderId, price, liveStatus) # create sell order if buy is filled
-					
-
-		
-
-
-
-		
-		# get last orders status from Binance
-		# for j in range(len(orderList)):
-		# 	lastOrder = ef.LastOrderStatus(coin, base, j+1)
-		# 	print(lastOrder)
-			
-		# 	if lastOrder[2] == 'BUY' and lastOrder[4] == 'FILLED':
-		# 		print('buy order is filled, create sell order')
-		# 		limitBuyPrice = float(lastOrder[5])
-		# 		limitSellPrice = hp.round_decimals_down(limitBuyPrice + (limitBuyPrice*(takeProfit/100)))
-		# 		ef.SimpleLimitSell(symbol, tradeQuantity, limitSellPrice)
-
-		# 	if lastOrder[2] == 'SELL' and lastOrder[4] == 'FILLED':
-		# 		print('sell order is filled, create buy order')
-		# 		limitSellPrice = float(lastOrder[5])
-		# 		limitBuyPrice = hp.round_decimals_down(limitSellPrice - (limitSellPrice*(takeProfit/100)))
-		# 		ef.SimpleLimitBuy(symbol, tradeQuantity, limitBuyPrice)
-
-
 		print('\n')
 
 		# # check balance
