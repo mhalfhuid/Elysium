@@ -68,7 +68,7 @@ url = 'https://api.binance.com' #binance server
 timeout = 5
 
 
-trade_interval = 25 #in seconds
+trade_interval = 90 #in seconds
 coin = 'ETH'
 base = 'USDC'
 init = True
@@ -88,33 +88,34 @@ ls_order = []
 buyLimitPrice =0
 countFilled = 0
 gridNumber = 1
-takeProfit = 3
+takeProfit = 1
 adjustmentValue = 0.2
-priceLevel = 2830
+# priceLevel = 2830
 tradeQuantity = 0.2  #in ETH
-lowerBound = 2100
-upperBound = 2800
+lowerBound = 1800
+upperBound = 2200
 
 
 
 
 # start Main program
 timestamp = hp.TimeStamp()
-print('%s: Starting Elysium version %s' %(timestamp, programVersion))
+print('%s: Starting Elysium version leah was here %s' %(timestamp, programVersion))
 orderNum = len(db.SQLSelectOrder())
 # create orderlist if order table is empty
 if orderNum == 0: #order table is empty
 	orderList = ef.SetGrid(coin, base, lowerBound, upperBound, takeProfit)
 	for order in orderList:
-		if order != {}:
-			symbol = order['symbol']
-			orderId = order['orderId']
-			transactTime = str(hp.EpochmsToDatetime(order['transactTime']))
-			price = float(order['price'])
-			quantity = order['origQty']
-			status = order['status']
-			side = order['side']
-			db.SQLInsertOrder(symbol, orderId, transactTime,price, quantity,status, side)
+			if order != {}:
+				symbol = order['symbol']
+				orderId = order['orderId']
+				transactTime = str(hp.EpochmsToDatetime(order['transactTime']))
+				price = float(order['price'])
+				quantity = order['origQty']
+				status = order['status']
+				side = order['side']
+				db.SQLInsertOrder(symbol, orderId, transactTime, price, quantity,status, side)
+			
 else: #order table is filled, update live order status
 	liveOrderList = ef.GetLiveOrders(coin, base, orderNum)
 	orderList = db.SQLSelectOrder()
@@ -126,21 +127,18 @@ else: #order table is filled, update live order status
 				db.SQLUpdateOrderStatus(liveStatus, orderId)
 
 
-
 while datetime.now() < program_end:
+	
 	try:
 		request = requests.get(url, timeout=timeout) #check internet connection
 
+
+		
 		# update live order status
 		orderNum = len(db.SQLSelectOrder())
 		liveOrderList = ef.GetLiveOrders(coin, base, orderNum)
-		print('live orders')
-		print(liveOrderList)
-		
-		orderList = db.SQLSelectOrder()
-		print('db orders')
-		print(orderList)
 
+		orderList = db.SQLSelectOrder()
 		for order in orderList:
 			symbol = order[1]
 			orderId = int(order[2])
@@ -156,24 +154,12 @@ while datetime.now() < program_end:
 
 					db.SQLUpdateOrderStatus(liveStatus, orderId)
 
-					if side == 'BUY' and liveStatus == 'CANCELED': #if buy order is filled and current price is above buy price create new buy order
-						currentPrice = ef.PriceAction2(symbol)[3]
-						if currentPrice > price:
-							renewOrder = ef.SimpleLimitBuy(symbol, quantity, price)
-							db.SQLDeleteOrder(orderId)
-							time.sleep(10)
 
-							newOrder = ef.LastOrderStatus(coin, base, 1)
-							newOrderId = newOrder[0]
-							newTransactTime = str(hp.EpochmsToDatetime(order[4]))
-							# newPrice = int(newOrder[6])
-							newPrice = newOrder[6]
-							print(newPrice)
-							print(type(newPrice))
-							
-							db.SQLInsertOrder(symbol, newOrderId, newTransactTime, newPrice, quantity, 'NEW', 'BUY')
+		ef.RenewBuyOrder(coin, base)
+
+
 					
-		print('\n')
+		# print('\n')
 
 		# # check balance
 		# coinBalance = ef.CheckBalanceTotal(coin)

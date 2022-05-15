@@ -596,7 +596,6 @@ def LastOrderStatus(coin, base, limit):
 		return (orderId, coin, base, side, time, state, price, quantity)
 
 
-print(LastOrderStatus('ETH', 'USDC', 1))
 
 
 def SimpleBuy(coin, base, quantity):
@@ -784,8 +783,8 @@ def SetPricelevels(lowerBound, upperBound, takeProfit):
 
 	return priceLevelList
 
-coin = 'ETH'
-base = 'USDC'
+# coin = 'ETH'
+# base = 'USDC'
 
 def CreateGridOrders(coin, base, lowerBound, upperBound, takeProfit):
 	orders = []
@@ -868,19 +867,66 @@ def SetGrid(coin, base, lowerBound, upperBound, takeProfit):
 
 def GetLiveOrders(coin, base, orderNum):
 	liveOrderList = []
-	for i in range(orderNum):
-		i+=1
+	symbol = coin + base
+	i = 1
+	while i < orderNum + 1:
 		order = LastOrderStatus(coin, base, i)
-		liveOrderList.append(order)
+		time.sleep(5)
+		lastSymbol = order[1] + order[2]
+		if symbol == lastSymbol: # only add orders with symbol
+			liveOrderList.append(order)
+			i+=1
 	return liveOrderList
 
+def RenewBuyOrder(coin, base):
+	symbol = coin + base
+	orderList = db.SQLSelectOrder()
+	levelNumber = len(orderList)
+	i = 0
+	while i < levelNumber - 1:
+		order = orderList[i]
+		orderId = order[2]
+		priceOrder = int(order[4])
+		quantityOrder = float(order[5])
+		statusOrder = order[6]
+		sideOrder = order[7] 
 
-		
+		nextOrder = orderList[i+1]
+		nexOrderId = nextOrder[2]	
+		priceNextOrder = int(nextOrder[4])
+		quantityNextOrder = float(nextOrder[5])
+		statusNextOrder = nextOrder[6]
+		sideNextOrder = nextOrder[7] 
+
+		if sideOrder == 'BUY' and statusOrder == 'FILLED':
+			if sideNextOrder == 'SELL' and statusNextOrder != 'FILLED':
+				print('buy order %f is filled, next sell order %f is not filled: waiting for sell order to be filled' %(orderId, nexOrderId))
+			if sideNextOrder == 'SELL' and statusNextOrder == 'FILLED': #SCENARIO I: buy order is filled next sell order is filled create next buy order
+				currentPrice = PriceAction2(symbol)[3]
+				if priceOrder < currentPrice:
+					print('SCENARIO I: buy order %f is filled, next sell order %f is filled: renewing buy order' %(orderId, nexOrderId))
+					renewOrder = SimpleLimitBuy(symbol, quantityOrder, priceOrder)
+					db.SQLDeleteOrder(orderId) # delere old order
+					time.sleep(10)
+					newOrder = LastOrderStatus(coin, base, 1)
+					newOrderId = newOrder[0]
+					newTransactTime = str(hp.EpochmsToDatetime(newOrder[4]))
+					db.SQLInsertOrder(symbol, newOrderId, newTransactTime, priceOrder, quantityOrder, 'NEW', 'BUY')
+			if sideNextOrder == 'BUY' and statusNextOrder == 'FILLED': #SCENARIO II: buy order is filled next buy order is filled create next sell order
+				currentPrice = PriceAction2(symbol)[3]
+				if priceNextOrder < currentPrice:
+					print('SCENARIO II: buy order %f is filled, next buy order %f is filled: renewing sell order' %(orderId, nexOrderId))
+					renewOrder = SimpleLimitSell(symbol, quantityNextOrder, priceNextOrder)
+					db.SQLDeleteOrder(nexOrderId) # delere old order
+					time.sleep(10)
+					newOrder = LastOrderStatus(coin, base, 1)
+					newOrderId = newOrder[0]
+					newTransactTime = str(hp.EpochmsToDatetime(newOrder[4]))
+					db.SQLInsertOrder(symbol, newOrderId, newTransactTime, priceNextOrder, quantityNextOrder, 'NEW', 'SELL')
+
+
+		i+=1
 
 
 
 
-
-# raw_server_time = client.get_server_time()
-# server_time = datetime.fromtimestamp(raw_server_time['serverTime']/1000.0)
-# print(server_time)
