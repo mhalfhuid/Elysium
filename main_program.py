@@ -58,7 +58,7 @@ import configdb as db
 
 # intitialise global variables
 programName = 'Elysium GridTrader'
-programVersion = '1.1 Beta'
+programVersion = '1.0 Beta'
 programDuration = 24 #in hours
 ReAdjustInterval = 3 #in hours
 
@@ -100,7 +100,7 @@ upperBound = 2200
 
 # start Main program
 timestamp = hp.TimeStamp()
-print('%s: Starting Elysium version leah was here %s' %(timestamp, programVersion))
+print('%s: Starting Elysium version 1.0 leah was here %s' %(timestamp, programVersion))
 orderNum = len(db.SQLSelectOrder())
 # create orderlist if order table is empty
 if orderNum == 0: #order table is empty
@@ -150,12 +150,14 @@ while datetime.now() < program_end:
 			for liveOrder in liveOrderList:
 				liveStatus = liveOrder[5]
 				if orderId == liveOrder[0] and status != liveStatus:
-					print('update dborder %f from status %s to live status %s' %(orderId, status, liveStatus))					
+					timestamp = hp.TimeStamp()
+					print('%s update dborder %f from status %s to live status %s' %(timestamp,orderId, status, liveStatus))					
 
 					db.SQLUpdateOrderStatus(liveStatus, orderId)
 
 
 		ef.RenewBuyOrder(coin, base)
+		print('program running...')
 
 
 					

@@ -900,11 +900,13 @@ def RenewBuyOrder(coin, base):
 
 		if sideOrder == 'BUY' and statusOrder == 'FILLED':
 			if sideNextOrder == 'SELL' and statusNextOrder != 'FILLED':
-				print('buy order %f is filled, next sell order %f is not filled: waiting for sell order to be filled' %(orderId, nexOrderId))
+				timestamp = hp.TimeStamp()
+				print('%s buy order %f is filled, next sell order %f is not filled: waiting for sell order to be filled' %(timestamp, orderId, nexOrderId))
 			if sideNextOrder == 'SELL' and statusNextOrder == 'FILLED': #SCENARIO I: buy order is filled next sell order is filled create next buy order
 				currentPrice = PriceAction2(symbol)[3]
 				if priceOrder < currentPrice:
-					print('SCENARIO I: buy order %f is filled, next sell order %f is filled: renewing buy order' %(orderId, nexOrderId))
+					timestamp = hp.TimeStamp()
+					print('%s SCENARIO I: buy order %f is filled, next sell order %f is filled: renewing buy order' %(timestamp, orderId, nexOrderId))
 					renewOrder = SimpleLimitBuy(symbol, quantityOrder, priceOrder)
 					db.SQLDeleteOrder(orderId) # delere old order
 					time.sleep(10)
@@ -914,8 +916,9 @@ def RenewBuyOrder(coin, base):
 					db.SQLInsertOrder(symbol, newOrderId, newTransactTime, priceOrder, quantityOrder, 'NEW', 'BUY')
 			if sideNextOrder == 'BUY' and statusNextOrder == 'FILLED': #SCENARIO II: buy order is filled next buy order is filled create next sell order
 				currentPrice = PriceAction2(symbol)[3]
-				if priceNextOrder < currentPrice:
-					print('SCENARIO II: buy order %f is filled, next buy order %f is filled: renewing sell order' %(orderId, nexOrderId))
+				if currentPrice < priceNextOrder:
+					timestamp = hp.TimeStamp()
+					print('%s SCENARIO II: buy order %f is filled, next buy order %f is filled: renewing sell order' %(timestamp, orderId, nexOrderId))
 					renewOrder = SimpleLimitSell(symbol, quantityNextOrder, priceNextOrder)
 					db.SQLDeleteOrder(nexOrderId) # delere old order
 					time.sleep(10)
@@ -927,6 +930,9 @@ def RenewBuyOrder(coin, base):
 
 		i+=1
 
+# coin = 'ETH'
+# base = 'USDC'
 
+# RenewBuyOrder(coin, base)
 
 
