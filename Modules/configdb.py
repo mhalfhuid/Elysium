@@ -4,13 +4,13 @@ import sqlite3
 import helpfunctions as hp
 import pandas as pd
 from datetime import datetime, timedelta
+import dbconnection as con
 
 
 
 
 # define connection and database
-# connection = sqlite3.connect('../Database/monitor.db') # holds vortex trade tables
-connection = sqlite3.connect('/Users/malcolmhalfhuid/Python/Ava2/Database/monitor.db')
+connection = con.connection
 cursor = connection.cursor()
 
 #----------------------------BEGIN CONFIG TABLE------------------------------------

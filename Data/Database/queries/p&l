@@ -1,0 +1,15 @@
+SELECT T2.time_ind, ((T2.price - T1.price) / T1.price) * 100 as profit, T1.strategy  
+FROM TRANSACTIONS T1
+INNER JOIN TRANSACTIONS T2 ON T1.coin = T2.coin 
+    AND T1.base = T2.base
+    AND T1.strategy = T2.strategy
+    AND T1.interval = T2.interval
+    AND T1.quantity = T2.quantity
+    AND T1.transaction_id <> T2.transaction_id
+    AND T1.side = 'BUY' 
+    AND T2.side = 'SELL';
+    
+    
+    
+
+

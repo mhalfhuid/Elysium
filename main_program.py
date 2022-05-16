@@ -157,7 +157,7 @@ while datetime.now() < program_end:
 
 
 		ef.RenewBuyOrder(coin, base)
-		print('program running...')
+		print('Elysium %s running..' %programVersion)
 
 
 					
