@@ -109,6 +109,7 @@ buyOrderId = 749967272
 buyPrice = 64566.52
 statusChange = '2021-11-12 02:14'
 quantity = 0.00047
+
 def SQLOpenTrade(configId, buyOrderId, buyPrice, statusChange, quantity):
 	buySide = 'FILLED'
 	sellSide = ''

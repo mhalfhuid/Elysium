@@ -18,7 +18,7 @@ backlog
 -20220507-8: profit per transaction
 -20220507-9: github repo
 +20220507-10: check live order status 
--20220507-11: renew order
++20220507-11: renew order
 
 
 
@@ -88,7 +88,7 @@ ls_order = []
 buyLimitPrice =0
 countFilled = 0
 gridNumber = 1
-takeProfit = 1
+takeProfit = 1.2
 adjustmentValue = 0.2
 # priceLevel = 2830
 tradeQuantity = 0.2  #in ETH
