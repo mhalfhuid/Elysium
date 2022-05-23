@@ -13,29 +13,50 @@ import dbconnection as con
 connection = con.connection
 cursor = connection.cursor()
 
-#----------------------------BEGIN CONFIG TABLE------------------------------------
+#----------------------------BEGIN ORDERS TABLE------------------------------------
 # creating config table
 sql_config = """CREATE TABLE IF NOT EXISTS
 ORDERS(id INTEGER PRIMARY KEY, symbol TEXT, orderId INT, transactTime TEXT, price REAL, quantity REAL, status TEXT, side TEXT)"""
 cursor.execute(sql_config)
 
 sql_insert_order = """INSERT INTO ORDERS (symbol, orderId, transactTime, price, quantity, status, side) VALUES (?,?,?,?,?,?,?)"""
-
 def SQLInsertOrder(symbol, orderId, transactTime, price, quantity, status, side):
 	# time_ind = hp.TimeStamp()
 	cursor.execute(sql_insert_order, (symbol, orderId, transactTime, price, quantity, status, side))
 	connection.commit()
 
+# SQLInsertOrder('ETHUSDC', 688725808, '2022-05-21 01:00', 2050, 26.0, 'NEW', 'BUY')
+
+# truncating order table
+sql_truncate = """DELETE FROM ORDERS"""
+def SQLTruncateOrderTable():
+	cursor.execute(sql_truncate)
+	connection.commit()
 
 
-# check if orders exist
+
+
+# select all orders
 sql_select_order = """SELECT * FROM ORDERS"""
 def SQLSelectOrder():
 	cursor.execute(sql_select_order)
 	ls = cursor.fetchall()
 	return ls
 
+# check specific order
+sql_select_orderid = """SELECT * FROM ORDERS WHERE orderId = ?"""
+def SQLSelectOrderId(orderId):
+	orderId = int(orderId)
+	cursor.execute(sql_select_orderid, (orderId,))
+	ls = cursor.fetchall()
+	return ls
 
+
+sql_select_vw_order = """SELECT * FROM VW_ORDERS"""
+def SQLSelectVWOrder():
+	cursor.execute(sql_select_vw_order)
+	ls = cursor.fetchall()
+	return ls
 
 # update order status
 sql_update_order_status =  """UPDATE ORDERS SET status = ? WHERE orderId = ? """
@@ -44,6 +65,8 @@ def SQLUpdateOrderStatus(status, orderId):
 	connection.commit()
 
 
+# SQLUpdateOrderStatus('FILLED', 688725910.0000000)
+
 # delete order
 sql_delete_order = """DELETE FROM ORDERS WHERE orderId = ?"""
 def SQLDeleteOrder(orderId):
@@ -51,6 +74,31 @@ def SQLDeleteOrder(orderId):
 	connection.commit()
 	
 
+#----------------------------BEGIN BALANCE TABLE------------------------------------
+# creating config table
+sql_create_balance = """CREATE TABLE IF NOT EXISTS
+BALANCE(id INTEGER PRIMARY KEY, strategy TEXT, symbol TEXT, balanceTime TEXT, usd_balance REAL)"""
+cursor.execute(sql_create_balance)
+connection.commit()
+
+
+
+sql_insert_balance = """INSERT INTO BALANCE (strategy, symbol,balanceTime, usd_balance) VALUES (?,?,?,?)"""
+def SQLInsertBalance(strategy, symbol, balanceTime, usd_balance):
+	cursor.execute(sql_insert_balance, (strategy, symbol, balanceTime, usd_balance))
+	connection.commit()
+
+
+sql_last_balance = """SELECT MAX(DATETIME(balanceTime)) FROM BALANCE"""
+def SQLLastBalance():
+	cursor.execute(sql_last_balance)
+	result = cursor.fetchall()
+	if result[0][0] != None:
+		return result[0][0]
+	else: 
+		return None
+
+# print(SQLLastBalance())
 #----------------------------BEGIN TRADE TABLE------------------------------------
 
 # defining trade status table

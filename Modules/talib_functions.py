@@ -148,7 +148,7 @@ def LastMFI(coin, base, n,m):
 	belowM = [1 for x in ls if x < m ] 
 	return sum(belowM)
 
-print(LastMFI('BTC', 'BUSD',60,35))
+
 
 
 def VOL_15M(coin, base):
@@ -196,20 +196,37 @@ def BBANDS_15M(coin, base):
 	return (upper.values[-1], middle.values[-1], lower.values[-1])
 
 
-# symbol = 'ALPHABTC'
-# candles = client.get_historical_klines(symbol, Client.KLINE_INTERVAL_1MINUTE, '2021-09-23 07:30', '2021-09-24 07:30')
-# df = pandas.DataFrame(candles)
-# df = df.rename(columns={0: 'time', 1: 'open', 2:'high', 3:'low', 4:'close', 5:'volume'})
-# yvalues = df.close
-# yvalues = yvalues.values.tolist()
-# yvalues = list(map(float, yvalues))
-# xvalues = range(len(yvalues))
+def Correlation(coin1, coin2, base):
+	symbol1 = coin1 + base
+	symbol2 = coin2 + base
+	
+	candles = client.get_klines(symbol = symbol1, interval = Client.KLINE_INTERVAL_15MINUTE)
+	df_coin1 = pandas.DataFrame(candles)
+	df_coin1 = df_coin1.rename(columns={0: 'time1', 1: 'open1', 2:'high1', 3:'low1', 4:'close1', 5:'volume1'})
+	df_close1 = df_coin1.close1
+	df1 = df_close1.to_frame()
+	df1['close1'] = pd.to_numeric(df1['close1'], downcast="float")
 
 
-# plt.plot(xvalues, yvalues)
-# plt.xlabel('minutes')
-# plt.ylabel('profit in %')
-# plt.title('Average profit per minute')
-# plt.show()
+	candles = client.get_klines(symbol = symbol2, interval = Client.KLINE_INTERVAL_15MINUTE)
+	df_coin2 = pandas.DataFrame(candles)
+	df_coin2 = df_coin2.rename(columns={0: 'time2', 1: 'open2', 2:'high2', 3:'low2', 4:'close2', 5:'volume2'})
+	df_close2 = df_coin2.close2
+	df2 = df_close2.to_frame()
+	df2['close2'] = pd.to_numeric(df2['close2'], downcast="float")
+
+	# df = df_close1.rename(columns={0: 'coin1'})
+	# df = df_close1.to_frame()
+	df1['close2'] = df2['close2']
+
+
+	# return df1
+
+	return df1.corr(method='pearson')
+
+
+
+# print(Correlation('BTC', 'USDC', 'USDT'))
+
 
 

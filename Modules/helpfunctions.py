@@ -211,15 +211,34 @@ def TimeStamp():
 	result = datetime.datetime.fromtimestamp(now).strftime('%Y-%m-%d %H:%M')
 	return result
 
+
+
+
 def TimeStampEpoch():
 	now = int(time.time())
 	return now
 
+def TimeStampEpochMS():
+	now = int(time.time())
+	return now * 1000
+
+def StringToDatetime(st):
+	return datetime.datetime.strptime(st, '%Y-%m-%d %H:%M:%S')
+
+
+# print(StringToDatetime('2022-05-22 22:08:15'))
+
+
 def EpochmsToDatetime(epoch):
 	epoch = epoch / 1000 #convert to epoch in seconds
 	return datetime.datetime.fromtimestamp(epoch)
-# now = int(time.time())
-# print(type(now))
+
+
+def EpochmsToString(epoch):
+	epoch = epoch / 1000 #convert to epoch in seconds
+	return str(datetime.datetime.fromtimestamp(epoch))[0:19]
+
+# print(EpochmsToString(1653084014524))
 
 def CheckLoss(l):
 	ls_coins_with_loss = []
@@ -272,6 +291,8 @@ def ShowCoinsInPreselection():
 		print(ls_preselect)
 
 
+
+
 def round_decimals_down(number:float, decimals:int=2):
     """
     Returns a value rounded down to a specific number of decimal places.
@@ -286,6 +307,10 @@ def round_decimals_down(number:float, decimals:int=2):
     factor = 10 ** decimals
     return math.floor(number * factor) / factor
 
+# x = 0.103700
+# print(type(x))
+# print(round_decimals_down(x, 5))
+# print(type(round_decimals_down(x, 5)))
 
 
 def round_decimals_up(number:float, decimals:int=2):

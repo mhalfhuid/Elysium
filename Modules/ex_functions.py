@@ -592,10 +592,11 @@ def LastOrderStatus(coin, base, limit):
 		time = orders[0]['updateTime']
 		state = orders[0]['status']
 		price = orders[0]['price']
-		quantity = orders[0]['executedQty']
+		quantity = orders[0]['origQty']
 		return (orderId, coin, base, side, time, state, price, quantity)
 
-
+# orders = client.get_all_orders(symbol='ETHUSDC', limit = 1)
+# print(orders)
 
 
 def SimpleBuy(coin, base, quantity):
@@ -865,18 +866,30 @@ def SetGrid(coin, base, lowerBound, upperBound, takeProfit):
 	return orderList	
 
 
-def GetLiveOrders(coin, base, orderNum):
+def GetLiveOrders(coin, base, maxnumber):
 	liveOrderList = []
 	symbol = coin + base
 	i = 1
-	while i < orderNum + 1:
-		order = LastOrderStatus(coin, base, i)
-		time.sleep(5)
-		lastSymbol = order[1] + order[2]
-		if symbol == lastSymbol: # only add orders with symbol
+	order = LastOrderStatus(coin, base, i)
+	orderCoin = order[1]
+	orderBase = order[2]
+	orderEpoch = order[4]
+	status = order[5]
+	while i < maxnumber + 1:
+		if coin == orderCoin and base == orderBase:  #status != 'FILLED' and 
 			liveOrderList.append(order)
 			i+=1
+			order = LastOrderStatus(coin, base, i)
+		time.sleep(1)
+
 	return liveOrderList
+
+
+# coin = 'ETH'
+# base = 'USDC'
+# print(GetLiveOrders(coin, base, 15))
+# print(order)
+
 
 def RenewBuyOrder(coin, base):
 	symbol = coin + base
@@ -930,9 +943,121 @@ def RenewBuyOrder(coin, base):
 
 		i+=1
 
-# coin = 'ETH'
-# base = 'USDC'
 
-# RenewBuyOrder(coin, base)
 
+def RenewOrder(coin, base):
+	symbol = coin + base
+	orderList = db.SQLSelectVWOrder()
+	dummyList = [(0,'dummy',0,'dummy',0.0,'dummy','dummy', 'dummy')]
+	nextOrderList = orderList[1:] + dummyList
+	formerOrderList =  dummyList + orderList
+
+	# lookup current price
+	currentPrice = PriceAction2(symbol)[3]
+	
+	# SCENARIO I: fromBUYtoBUY
+	fromBUYtoBUY = [currentOrder for currentOrder, nextOrder in zip(orderList, nextOrderList) \
+		if currentOrder[7] == 'BUY' and currentOrder[6] == 'FILLED' and nextOrder[7] == 'SELL' \
+		and nextOrder[6] == 'FILLED' and currentOrder[4] < currentPrice]
+
+	# print('fromBUYtoBUY')
+	# print(fromBUYtoBUY)
+	# print('\n')
+	
+	# SCENARIO II: fromBUYtoSELL
+	fromBUYtoSELL = [nextOrder for currentOrder, nextOrder in zip(orderList, nextOrderList) \
+		if nextOrder[7] == 'BUY' and nextOrder[6] == 'FILLED' and currentOrder[7] == 'BUY' \
+		and currentOrder[6] == 'FILLED' and currentPrice < nextOrder[4]]
+
+	# print('fromBUYtoSELL')
+	# print(fromBUYtoSELL)
+	# print('\n')
+
+	# SCENARIO III: fromSELLtoSELL
+	fromSELLtoSELL = [currentOrder for formerOrder, currentOrder in zip(formerOrderList, orderList) \
+		if formerOrder[7] == 'BUY' and formerOrder[6] == 'FILLED' and currentOrder[7] == 'SELL' \
+		and currentOrder[6] == 'FILLED' and currentPrice < currentOrder[4]]
+
+	# print('fromSELLtoSELL')
+	# print(fromSELLtoSELL)
+	# print('\n')
+
+	# SCENARIO IV: fromSELLtoBUY
+	fromSELLtoBUY = [currentOrder for currentOrder, nextOrder in zip(orderList, nextOrderList) \
+		if currentOrder[7] == 'SELL' and nextOrder[6] == 'FILLED' and nextOrder[7] == 'SELL' \
+		and currentOrder[6] == 'FILLED' and currentPrice > nextOrder[4] and currentPrice < currentOrder[4]]
+
+
+	# print('fromSELLtoBUY')
+	# print(fromSELLtoBUY)
+	# print('\n')
+
+	if len(fromBUYtoBUY) > 0:
+		currentOrderId = fromBUYtoBUY[0][2]
+		price = float(fromBUYtoBUY[0][4])
+		print(price)
+		print(type(price))
+		quantity = hp.round_decimals_down(float(fromBUYtoBUY[0][5]),5)
+		print(quantity)
+		print(type(quantity))
+		db.SQLDeleteOrder(currentOrderId) # delete old order		
+		SimpleLimitBuy(symbol, quantity, price)
+		time.sleep(5)
+		newOrder = LastOrderStatus(coin, base, 1)
+		newOrderId = newOrder[0]
+		newTransactTime = str(hp.EpochmsToDatetime(newOrder[4]))
+		db.SQLInsertOrder(symbol, newOrderId, newTransactTime, price, quantity, 'NEW', 'BUY')
+
+	if len(fromBUYtoSELL) > 0:
+		currentOrderId = fromBUYtoSELL[0][2]
+		price = float(fromBUYtoSELL[0][4])
+		print(price)
+		print(type(price))
+		quantity = hp.round_decimals_down(float(fromBUYtoSELL[0][5]),5)
+		print(quantity)
+		print(type(quantity))
+		db.SQLDeleteOrder(currentOrderId) # delete old order
+		SimpleLimitSell(symbol, quantity, price)
+		time.sleep(5)
+		newOrder = LastOrderStatus(coin, base, 1)
+		newOrderId = newOrder[0]
+		newTransactTime = str(hp.EpochmsToDatetime(newOrder[4]))
+		db.SQLInsertOrder(symbol, newOrderId, newTransactTime, price, quantity, 'NEW', 'SELL')
+
+	if len(fromSELLtoSELL) > 0:
+		print(fromSELLtoSELL)
+		currentOrderId = fromSELLtoSELL[0][2]
+		price = float(fromSELLtoSELL[0][4])
+		print(price)
+		print(type(price))
+		quantity = hp.round_decimals_down(float(fromSELLtoSELL[0][5]),5)
+		print(quantity)
+		print(type(quantity))
+		db.SQLDeleteOrder(currentOrderId) # delete old order
+		SimpleLimitSell(symbol, quantity, price)
+		time.sleep(5)
+		newOrder = LastOrderStatus(coin, base, 1)
+		newOrderId = newOrder[0]
+		newTransactTime = str(hp.EpochmsToDatetime(newOrder[4]))
+		db.SQLInsertOrder(symbol, newOrderId, newTransactTime, price, quantity, 'NEW', 'SELL')
+
+	# if len(fromSELLtoBUY) > 0:
+	# 	print(fromSELLtoBUY)
+	# 	currentOrderId = fromSELLtoBUY[0][2]
+	# 	price = float(fromSELLtoBUY[0][4])
+	# 	print(price)
+	# 	print(type(price))
+	# 	quantity = hp.round_decimals_down(float(fromSELLtoBUY[0][5]),5)
+	# 	print(quantity)
+	# 	print(type(quantity))
+		# db.SQLDeleteOrder(currentOrderId) # delete old order
+		# SimpleLimitBuy(symbol, quantity, price)
+		# time.sleep(5)
+		# newOrder = LastOrderStatus(coin, base, 1)
+		# newOrderId = newOrder[0]
+		# newTransactTime = str(hp.EpochmsToDatetime(newOrder[4]))
+		# db.SQLInsertOrder(symbol, newOrderId, newTransactTime, price, quantity, 'NEW', 'BUY')
+
+
+# print(CheckBalanceTotal('ETH'))
 
